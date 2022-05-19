@@ -6,74 +6,75 @@ const maskBg = (function () {
 })()
 
 const maskTest = function () {
+  let container = '';
   let contents = '';
   let canvas = '';
   let ctx = '';
   let drawSvg = new Image();
-  let position = {
-    x: 0,
-    y: 0,
-  }
-  let _currentSize = '';
-  let _percent = 0;
-  let maxScale = 0;
-  let minScale = 0;
+  let currentSize = '';
+  let percent = 0;
+  let maxScale = 1.5;
+  let minScale = 0.5;
   let minSvgSize = 0;
   let setSvgSize = 500;
+  let svgCenterL = 0;
+  let svgCenterT = 0;
 
   const _init = function () {
+    container = document.querySelector('.container');
     contents = document.querySelector('.contents');
     canvas = document.querySelector('.mask_canvas');
     ctx = canvas.getContext("2d");
-
-    // 값 설정
+    
     canvas.width = contents.clientWidth;
     canvas.height = contents.clientHeight;
     drawSvg.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="100" height="100" viewBox="0 0 100 100" style="enable-background:new 0 0 100 100;" xml:space="preserve"><circle cx="50" cy="50" r="42.41"/></svg>');
-    // maxScale = 3;
-    // minScale = 1;
-    // minSvgSize = Math.min( setSvgSize * minScale, setSvgSize * (canvas.width / setSvgSize) );
-    // svgSize = canvas.width * maxScale;
-    // scalePercent = 1 - _percent;
-    // _currentSize = svgSize * scalePercent + minSvgSize;
-    _currentSize = 500; 
+    minSvgSize = Math.min( setSvgSize * minScale, setSvgSize * (canvas.width / setSvgSize) );
+    svgSize = canvas.width * maxScale;
 
-    // canvas 설정
+    drawSvg.onload ? _draw(0) : null; 
+  }
+
+  const _draw = function (percent) {
+
+    // 값 설정
+    scalePercent = 1 - percent;
+    currentSize = (svgSize * scalePercent + minSvgSize);
+    svgCenterL = ( canvas.width / 2 ) - ( currentSize / 2 ); 
+    svgCenterT = ( canvas.height / 2 ) - ( currentSize / 2 );
+
+    console.log(percent, scalePercent, currentSize, svgCenterL, svgCenterT)
+
+    // 0. canvas 리셋
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 1. canvas 설정
     ctx.globalCompositeOperation = 'xor';
     
-    // 1. 배경 그리기
+    // 2. 배경 그리기
     ctx.beginPath();
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.closePath();
     
-    // 2. 이미지 그리기
+    // 3. 이미지 그리기
     ctx.beginPath();
-    drawSvg.onload = function () {
-      ctx.drawImage(drawSvg, 0, 0, _currentSize, _currentSize);
-    }
+    ctx.drawImage(drawSvg, svgCenterL, svgCenterT, currentSize, currentSize);
     ctx.closePath();
   }
 
-  const _draw = function (e) {
-    position.x = e.clientX;
-    position.y = e.clientY;
-    
-    // canvas 설정
-    ctx.globalCompositeOperation = 'xor';
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(drawSvg, position.x, position.y, _currentSize, _currentSize);
-  }
-
   const _scroll = function () {
+    let _scrollTop = scrollY - container.offsetTop;
+    let _moveArea = container.clientHeight - window.innerHeight;
+    let _percent = Math.min(1, _scrollTop / _moveArea);
+    _percent = Math.min(1, Math.max(0, _percent));
     
+    _draw(_percent);
   }
 
   _init();
 
-  window.addEventListener('mousemove', _draw)
+  window.addEventListener('scroll', _scroll)
 
   return {
     init : _init,
